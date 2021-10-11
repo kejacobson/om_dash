@@ -150,6 +150,21 @@ class GuiOptimizationHistory(PlotlyBase):
             all_data = pd.concat([objs, dvs], axis=1)
         return all_data
 
+    def generate_extend_data_for_opt_hist_traces(self):
+        all_data = gui._merge_dataframes(self.objs, self.cons, self.dvs)
+        n_traces = all_data.shape[1]
+
+        extend_data = dict(x=[np.arange(0) for _ in range(n_traces)],
+                           y=[[] for _ in range(n_traces)])
+
+        if all_data.shape[0] > 0:
+            new_iterations = np.arange(self.iterations[-1]+1, all_data.shape[0])
+            if new_iterations.size > 0:
+                extend_data = dict(x=[new_iterations.copy() for _ in range(n_traces)],
+                                   y=[val[new_iterations] for _, val in all_data.items()])
+                self.iterations = np.arange(new_iterations[-1]+1)
+        return extend_data
+
 
 if __name__ == '__main__':
     gui = GuiOptimizationHistory()
@@ -177,19 +192,7 @@ if __name__ == '__main__':
         [State('recorder_file', 'value')])
     def generate_history_graphs(n_intervals, recorder_file):
         gui.read_histories_from_recorder(recorder_file)
-        all_data = gui._merge_dataframes(gui.objs, gui.cons, gui.dvs)
-        n_traces = all_data.shape[1]
-
-        extend_data = dict(x=[np.arange(0) for _ in range(n_traces)],
-                           y=[[] for _ in range(n_traces)])
-
-        if all_data.shape[0] > 0:
-            new_iterations = np.arange(gui.iterations[-1]+1, all_data.shape[0])
-            if new_iterations.size > 0:
-                extend_data = dict(x=[new_iterations.copy() for _ in range(n_traces)],
-                                   y=[val[new_iterations] for _, val in all_data.items()])
-                gui.iterations = np.arange(new_iterations[-1]+1)
-        return extend_data
+        return gui.generate_extend_data_for_opt_hist_traces()
 
     @ app.callback(
         Output('opt_hist_export_html_status', 'children'),
