@@ -15,7 +15,8 @@ class Paraboloid(om.ExplicitComponent):
         x = inputs['x']
         y = inputs['y']
         outputs['f'] = (x-3)**2 + x*y + (y+4)**2 - 3
-        time.sleep(20.0)
+        time.sleep(5.0)
+        print('step')
 
 
 # build the model

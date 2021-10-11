@@ -5,7 +5,6 @@ import numpy as np
 from om_dash.plotly_base import PlotlyBase
 
 import plotly.graph_objects as go
-import plotly.express as px
 import dash
 from dash import html, dcc
 from dash.dependencies import Input, Output, State
@@ -88,8 +87,6 @@ class GuiOptimizationHistory(PlotlyBase):
                                               fontSize='24px'))
         children = [html.H1('Case Information'),
                     self.create_case_information_input_table(),
-                    html.H3('Plot settings upon refresh:'),
-                    self.create_plot_settings_input_table(),
                     start_button,
                     dcc.Interval(id='live_update_interval', interval=10*60*1000, n_intervals=0)]
         div = html.Div(children=children, id='div_case_info')
@@ -104,17 +101,6 @@ class GuiOptimizationHistory(PlotlyBase):
             html.Tr([html.Td('Recorder file:'),
                      dcc.Input(id='recorder_file', type='text',
                                value='optimization.sql', style=dict(width='300%'))
-                     ]),
-        ])
-
-    def create_plot_settings_input_table(self):
-        return html.Table([
-            html.Tr([html.Td('Use log scale:'),
-                     dcc.Checklist(id='log_scale_checklist',
-                                   options=[dict(label='X axis', value='xlog'),
-                                            dict(label='Y axis', value='ylog')],
-                                   labelStyle=dict(display='inline-block'))
-
                      ]),
         ])
 
@@ -136,15 +122,17 @@ class GuiOptimizationHistory(PlotlyBase):
         children.extend(export_html)
         return html.Div(children=children)
 
-    def generate_history_fig(self, xlog, ylog):
-        if self.objs.size == 0:
-            all_data = self._create_empty_dataframe()
-        elif self.cons.size > 0:
-            all_data = pd.concat([self.objs, self.cons, self.dvs], axis=1)
-        else:
-            all_data = pd.concat([self.objs, self.dvs], axis=1)
+    def generate_history_fig(self, xlog=False, ylog=False):
+        all_data = self._merge_dataframes(self.objs, self.cons, self.dvs)
 
-        fig = px.line(all_data, markers=True)
+        self.iterations = np.arange(all_data.shape[0])
+        fig = go.Figure()
+        for key, vals in all_data.items():
+            fig.add_trace(go.Scatter(x=self.iterations,
+                                     y=vals,
+                                     mode='lines+markers',
+                                     name=key))
+
         xaxis, yaxis = self.get_axis_settings()
         xaxis['title'] = 'Iteration'
         xaxis['type'] = 'log' if xlog else 'linear'
@@ -153,6 +141,15 @@ class GuiOptimizationHistory(PlotlyBase):
         self.set_default_figure_layout(fig, xaxis, yaxis)
         return fig
 
+    def _merge_dataframes(self, objs, cons, dvs):
+        if objs.size == 0:
+            all_data = self._create_empty_dataframe()
+        elif cons.size > 0:
+            all_data = pd.concat([objs, cons, dvs], axis=1)
+        else:
+            all_data = pd.concat([objs, dvs], axis=1)
+        return all_data
+
 
 if __name__ == '__main__':
     gui = GuiOptimizationHistory()
@@ -160,29 +157,39 @@ if __name__ == '__main__':
     app.layout = gui.full_layout
 
     @ app.callback(
-        Output('live_update_interval', 'interval'),
+        [Output('live_update_interval', 'interval'),
+         Output('opt_hist_graph', 'figure')],
         [Input('start_button', 'n_clicks')],
-        [State('refresh_interval_input', 'value')])
-    def set_live_update_interval(n_clicks, interval_sec):
-        interval_ms = 10 * 1000
+        [State('refresh_interval_input', 'value'),
+         State('recorder_file', 'value')])
+    def set_live_update_interval(n_clicks, interval_sec, recorder_file):
         if n_clicks > 0:
             interval_ms = interval_sec * 1000
-        return interval_ms
+            gui.read_histories_from_recorder(recorder_file)
+        else:
+            interval_ms = 1e9
+        fig = gui.generate_history_fig()
+        return interval_ms, fig
 
     @ app.callback(
-        Output('div_outer_graphs', 'children'),
+        Output('opt_hist_graph', 'extendData'),
         [Input('live_update_interval', 'n_intervals')],
-        [State('recorder_file', 'value'),
-         State('log_scale_checklist', 'value')])
-    def generate_history_graphs(
-            n_intervals, recorder_file, log_scale):
+        [State('recorder_file', 'value')])
+    def generate_history_graphs(n_intervals, recorder_file):
         gui.read_histories_from_recorder(recorder_file)
-        xlog = False
-        ylog = False
-        if log_scale is not None:
-            xlog = True if 'xlog' in log_scale else False
-            ylog = True if 'ylog' in log_scale else False
-        return gui.generate_graphs(xlog, ylog)
+        all_data = gui._merge_dataframes(gui.objs, gui.cons, gui.dvs)
+        n_traces = all_data.shape[1]
+
+        extend_data = dict(x=[np.arange(0) for _ in range(n_traces)],
+                           y=[[] for _ in range(n_traces)])
+
+        if all_data.shape[0] > 0:
+            new_iterations = np.arange(gui.iterations[-1]+1, all_data.shape[0])
+            if new_iterations.size > 0:
+                extend_data = dict(x=[new_iterations.copy() for _ in range(n_traces)],
+                                   y=[val[new_iterations] for _, val in all_data.items()])
+                gui.iterations = np.arange(new_iterations[-1]+1)
+        return extend_data
 
     @ app.callback(
         Output('opt_hist_export_html_status', 'children'),
