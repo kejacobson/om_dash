@@ -11,7 +11,6 @@ from dash.dependencies import Input, Output, State
 
 
 class GuiOptimizationHistory(PlotlyBase):
-
     def __init__(self):
         super().__init__()
 
@@ -48,11 +47,11 @@ class GuiOptimizationHistory(PlotlyBase):
             obj = self._to_dataframe(case.get_objectives(scaled=False))
 
             if icase == 0:
-                dvs = pd.DataFrame(dv)
-                objs = pd.DataFrame(obj)
+                dvs = dv
+                objs = obj
             else:
-                dvs = pd.concat([dvs, pd.DataFrame(dv)], ignore_index=True)
-                objs = pd.concat([objs, pd.DataFrame(obj)], ignore_index=True)
+                dvs = pd.concat([dvs, dv], ignore_index=True)
+                objs = pd.concat([objs, obj], ignore_index=True)
         return objs, dvs
 
     def _parse_constraint_history(self, case_recorder):
@@ -63,9 +62,9 @@ class GuiOptimizationHistory(PlotlyBase):
             con = self._to_dataframe(case.get_constraints(scaled=False))
 
             if icase == 0:
-                cons = pd.DataFrame(con)
+                cons = con
             else:
-                cons = pd.concat([cons, pd.DataFrame(con)], ignore_index=True)
+                cons = pd.concat([cons, con], ignore_index=True)
         return cons
 
     def _to_dataframe(self, values_dict):
@@ -177,7 +176,7 @@ if __name__ == '__main__':
         [Input('start_button', 'n_clicks')],
         [State('refresh_interval_input', 'value'),
          State('recorder_file', 'value')])
-    def set_live_update_interval(n_clicks, interval_sec, recorder_file):
+    def set_live_update_interval_and_initial_plot(n_clicks, interval_sec, recorder_file):
         if n_clicks > 0:
             interval_ms = interval_sec * 1000
             gui.read_histories_from_recorder(recorder_file)
@@ -190,7 +189,7 @@ if __name__ == '__main__':
         Output('opt_hist_graph', 'extendData'),
         [Input('live_update_interval', 'n_intervals')],
         [State('recorder_file', 'value')])
-    def generate_history_graphs(n_intervals, recorder_file):
+    def update_plot_data(n_intervals, recorder_file):
         gui.read_histories_from_recorder(recorder_file)
         return gui.generate_extend_data_for_opt_hist_traces()
 
@@ -198,7 +197,7 @@ if __name__ == '__main__':
         Output('opt_hist_export_html_status', 'children'),
         [Input('opt_hist_export_html_button', 'n_clicks')],
         [State('opt_hist_export_html_input', 'value')])
-    def export_adapt_history_tec(n_clicks, filename):
+    def export_opt_history_html(n_clicks, filename):
         status = ''
         if n_clicks > 0:
             status = gui.export_fig_as_html(gui.obj_con_hist_fig, filename)
