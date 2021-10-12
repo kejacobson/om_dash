@@ -14,7 +14,7 @@ class GuiOptimizationHistory(PlotlyBase):
     def __init__(self):
         super().__init__()
 
-        recorder_filename = 'cases_DLM_flutter.sql'
+        recorder_filename = 'paraboloid.sql'
         self.read_histories_from_recorder(recorder_filename)
         xlog = False
         ylog = False
@@ -95,11 +95,11 @@ class GuiOptimizationHistory(PlotlyBase):
         return html.Table([
             html.Tr([html.Td('Refresh interval in seconds:'),
                      dcc.Input(id='refresh_interval_input', type='number',
-                               value=30, style=dict(width='30%')),
+                               value=5, style=dict(width='30%')),
                      ]),
             html.Tr([html.Td('Recorder file:'),
                      dcc.Input(id='recorder_file', type='text',
-                               value='optimization.sql', style=dict(width='300%'))
+                               value='paraboloid.sql', style=dict(width='300%'))
                      ]),
         ])
 
