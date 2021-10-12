@@ -150,7 +150,7 @@ class GuiOptimizationHistory(PlotlyBase):
         return all_data
 
     def generate_extend_data_for_opt_hist_traces(self):
-        all_data = gui._merge_dataframes(self.objs, self.cons, self.dvs)
+        all_data = self._merge_dataframes(self.objs, self.cons, self.dvs)
         n_traces = all_data.shape[1]
 
         extend_data = dict(x=[np.arange(0) for _ in range(n_traces)],
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     app = dash.Dash()
     app.layout = gui.full_layout
 
-    @ app.callback(
+    @app.callback(
         [Output('live_update_interval', 'interval'),
          Output('opt_hist_graph', 'figure')],
         [Input('start_button', 'n_clicks')],
@@ -185,7 +185,7 @@ if __name__ == '__main__':
         fig = gui.generate_history_fig()
         return interval_ms, fig
 
-    @ app.callback(
+    @app.callback(
         Output('opt_hist_graph', 'extendData'),
         [Input('live_update_interval', 'n_intervals')],
         [State('recorder_file', 'value')])
@@ -193,7 +193,7 @@ if __name__ == '__main__':
         gui.read_histories_from_recorder(recorder_file)
         return gui.generate_extend_data_for_opt_hist_traces()
 
-    @ app.callback(
+    @app.callback(
         Output('opt_hist_export_html_status', 'children'),
         [Input('opt_hist_export_html_button', 'n_clicks')],
         [State('opt_hist_export_html_input', 'value')])
