@@ -1,0 +1,10 @@
+{
+	"python.formatting.autopep8Args": [
+		"--max-line-length",
+		"100",
+		"--experimental"
+	],
+	"python.formatting.provider": "autopep8",
+	"editor.formatOnSave": true,
+	"python.analysis.useImportHeuristic": true,
+}
