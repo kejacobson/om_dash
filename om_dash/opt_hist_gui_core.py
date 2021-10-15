@@ -111,12 +111,12 @@ class GuiOptHistoryCore(PlotlyBase):
         return [self.generate_history_div(xlog, ylog)]
 
     def generate_history_div(self, xlog, ylog):
-        self.obj_con_hist_fig = self.generate_history_fig(xlog, ylog)
+        fig = self.generate_history_fig(xlog, ylog)
         export_html = self.generate_export_field_and_button(default_filename='opt_hist.html',
                                                             button_txt='Export interactive figure',
                                                             id_base='opt_hist_export_html')
         children = [html.H1('Optimization History'),
-                    dcc.Graph(figure=self.obj_con_hist_fig, id='opt_hist_graph')]
+                    dcc.Graph(figure=fig, id='opt_hist_graph')]
         children.extend(export_html)
         return html.Div(children=children)
 
@@ -124,20 +124,21 @@ class GuiOptHistoryCore(PlotlyBase):
         all_data = self._merge_dataframes(self.objs, self.cons, self.dvs)
 
         self.iterations = np.arange(all_data.shape[0])
-        fig = go.Figure()
+        self.obj_con_hist_fig = go.Figure()
         for key, vals in all_data.items():
-            fig.add_trace(go.Scatter(x=self.iterations,
-                                     y=vals,
-                                     mode='lines+markers',
-                                     name=key))
+            self.obj_con_hist_fig.add_trace(go.Scattergl(x=self.iterations,
+                                                         y=vals,
+                                                         mode='lines+markers',
+                                                         name=key))
 
         xaxis, yaxis = self.get_axis_settings()
         xaxis['title'] = 'Iteration'
         xaxis['type'] = 'log' if xlog else 'linear'
         yaxis['title'] = 'Value'
         yaxis['type'] = 'log' if ylog else 'linear'
-        self.set_default_figure_layout(fig, xaxis, yaxis)
-        return fig
+        self.set_default_figure_layout(self.obj_con_hist_fig, xaxis, yaxis)
+
+        return self.obj_con_hist_fig
 
     def _merge_dataframes(self, objs, cons, dvs):
         if objs.size == 0:
@@ -198,5 +199,7 @@ def add_callbacks(app, core):
     def export_opt_history_html(n_clicks, filename):
         status = ''
         if n_clicks > 0:
-            status = core.export_fig_as_html(core.obj_con_hist_fig, filename)
+            core.obj_con_hist_fig.write_html(filename)
+            #status = core.export_fig_as_html(core.obj_con_hist_fig, filename)
+            status = 'done'
         return status
