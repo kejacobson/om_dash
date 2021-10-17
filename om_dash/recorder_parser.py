@@ -6,6 +6,9 @@ from openmdao.recorders.sqlite_reader import SqliteCaseReader
 
 
 class RecorderParser:
+    def __init__(self, recorder_filename=''):
+        self.read_histories_from_recorder(recorder_filename)
+
     def read_histories_from_recorder(self, recorder_filename: str):
         self.objs = self._create_empty_dataframe()
         self.dvs = self._create_empty_dataframe()
@@ -83,3 +86,13 @@ class RecorderParser:
 
     def _no_data_has_been_read(self):
         return self.objs.size == 0
+
+    def write_data_to_tecplot(self, tecplot_filename):
+        all_data = self.get_dataframe_of_all_data()
+        vars = 'Iteration'
+        for var in all_data.keys():
+            vars += f' "{var}"'
+        header = (f'TITLE     = "OpenMDAO Record"\n'
+                  + f'VARIABLES ={vars}\n'
+                  + f'ZONE T="OpenMDAO"  I={all_data.shape[0]}, ZONETYPE=Ordered DATAPACKING=POINT')
+        np.savetxt(tecplot_filename, all_data.to_records(), header=header, comments='')

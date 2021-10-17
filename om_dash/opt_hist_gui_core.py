@@ -16,7 +16,7 @@ class GuiOptHistoryCore(PlotlyBase):
         self.recorder_file = 'paraboloid.sql'
         self.include_dvs = True
 
-        self.parser = RecorderParser()
+        self.parser = RecorderParser(self.recorder_file)
         self.parser.read_histories_from_recorder(self.recorder_file)
 
         sections = []
@@ -165,7 +165,7 @@ def add_callbacks(app, core: GuiOptHistoryCore):
         core.parser.read_histories_from_recorder(core.recorder_file)
         return core.generate_extend_data_for_opt_hist_traces()
 
-    @ app.callback(
+    @app.callback(
         Output('opt_export_html_status', 'children'),
         [Input('opt_export_html_button', 'n_clicks')],
         [State('opt_export_html_input', 'value')])
