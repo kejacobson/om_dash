@@ -7,17 +7,23 @@ from openmdao.recorders.sqlite_reader import SqliteCaseReader
 
 class RecorderParser:
     def __init__(self, recorder_filename=''):
-        self.read_histories_from_recorder(recorder_filename)
+        self.update_histories_from_recorder(recorder_filename)
 
-    def read_histories_from_recorder(self, recorder_filename: str):
-        self.objs = self._create_empty_dataframe()
-        self.dvs = self._create_empty_dataframe()
-        self.cons = self._create_empty_dataframe()
+    def update_histories_from_recorder(self, recorder_filename):
+        self.objs, self.cons, self.dvs = self.read_histories_from_recorder(recorder_filename)
+
+    def read_histories_from_recorder(self, recorder_filename: str, start_iteration=0):
+        objs = self._create_empty_dataframe()
+        dvs = self._create_empty_dataframe()
+        cons = self._create_empty_dataframe()
         if os.path.exists(recorder_filename):
             case_recorder = om.CaseReader(recorder_filename)
             if len(case_recorder.get_cases()) > 0:
-                self.objs, self.dvs = self._parse_objective_and_dv_histories(case_recorder)
-                self.cons = self._parse_constraint_history(case_recorder)
+                objs, dvs = self._parse_objective_and_dv_histories(case_recorder)
+                cons = self._parse_constraint_history(case_recorder)
+
+        self._add_iteration_column_to_dataframes(objs, start_iteration)
+        return objs, cons, dvs
 
     def _create_empty_dataframe(self):
         return pd.DataFrame({'empty': []})
@@ -65,9 +71,6 @@ class RecorderParser:
         return len(case_recorder.get_case(0).get_constraints().keys()) == 0
 
     def get_dataframe_of_all_data(self, include_constraints=True, include_dvs=True) -> pd.DataFrame:
-        if self._no_data_has_been_read():
-            return self._create_empty_dataframe()
-
         data = [self.objs]
         if self.cons.size > 0 and include_constraints:
             data.append(self.cons)
@@ -87,12 +90,18 @@ class RecorderParser:
     def _no_data_has_been_read(self):
         return self.objs.size == 0
 
+    def _add_iteration_column_to_dataframes(self, var: pd.DataFrame, start_iteration=0):
+        size = var.shape[0]
+        var.insert(0, 'Iteration', np.arange(start_iteration, start_iteration + size))
+
     def write_data_to_tecplot(self, tecplot_filename):
         all_data = self.get_dataframe_of_all_data()
-        vars = 'Iteration'
+
+        vars = ''
         for var in all_data.keys():
             vars += f' "{var}"'
+
         header = (f'TITLE     = "OpenMDAO Record"\n'
                   + f'VARIABLES ={vars}\n'
                   + f'ZONE T="OpenMDAO"  I={all_data.shape[0]}, ZONETYPE=Ordered DATAPACKING=POINT')
-        np.savetxt(tecplot_filename, all_data.to_records(), header=header, comments='')
+        np.savetxt(tecplot_filename, all_data.to_numpy(), header=header, comments='')
