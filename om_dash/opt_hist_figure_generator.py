@@ -35,20 +35,20 @@ class OptHistoryFigureGenerator(PlotlyBase):
         else:
             yaxis2 = None
 
-        self.opt_hist_fig = make_subplots(specs=[[{"secondary_y": True}]])
-        self.set_default_figure_layout(self.opt_hist_fig, xaxis, yaxis, yaxis2)
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+        self.set_default_figure_layout(fig, xaxis, yaxis, yaxis2)
 
         for sec_y, (key, vals) in zip(on_secondary_y, all_data.items()):
             if key == 'Iteration':
                 continue
 
-            self.opt_hist_fig.add_trace(go.Scattergl(x=self.plotted_iterations,
-                                                     y=vals,
-                                                     mode='lines+markers',
-                                                     name=key),
-                                        secondary_y=sec_y)
+            fig.add_trace(go.Scattergl(x=self.plotted_iterations,
+                                       y=vals,
+                                       mode='lines+markers',
+                                       name=key),
+                          secondary_y=sec_y)
 
-        return self.opt_hist_fig
+        return fig
 
     def generate_extend_data_for_opt_hist_traces(self):
         all_data = self._get_opt_history_data_from_parser()
