@@ -4,7 +4,7 @@ from om_dash.recorder_parser import RecorderParser
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('recorder_filename', type=str, help='OpenMDAO recorder filename (.sql file)')
-parser.add_argument('--tecplot_filename', type=str, default='{recorder_root}.dat',
+parser.add_argument('-o', '--output', type=str, default='{recorder_root}.dat',
                     help='Filename to write to tecplot.')
 args = parser.parse_args()
 
