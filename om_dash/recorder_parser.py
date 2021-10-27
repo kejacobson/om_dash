@@ -6,10 +6,15 @@ from openmdao.recorders.sqlite_reader import SqliteCaseReader
 
 
 class RecorderParser:
-    def __init__(self, recorder_filename=''):
+    def __init__(self, recorder_filename: str = ''):
+        """
+        Read OpenMDAO recorder and process into pandas dataframes.
+        Designed to work within a Dash gui so it will generate empty dataframes
+        if data isn't read.
+        """
         self.update_histories_from_recorder(recorder_filename)
 
-    def update_histories_from_recorder(self, recorder_filename):
+    def update_histories_from_recorder(self, recorder_filename: str):
         self.objs, self.cons, self.dvs = self.read_histories_from_recorder(recorder_filename)
 
     def read_histories_from_recorder(self, recorder_filename: str, start_iteration=0):

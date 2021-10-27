@@ -8,6 +8,9 @@ from dash import dcc, html
 
 class PlotlyBase:
     def __init__(self):
+        """
+        Plotly and dash functions and settings not specific to an individual application
+        """
         self._set_plot_style()
 
     def _set_plot_style(self):
@@ -22,9 +25,13 @@ class PlotlyBase:
         self.plot_height = 700
 
     def set_default_figure_layout(self, fig: go.Figure, xaxis: dict, yaxis: dict,
-                                  yaxis2=None):
+                                  yaxis2=None, add_update_menus=True):
         have_2nd_yaxis = False if yaxis2 is None else True
-        updatemenus, menu_annotations = self.make_update_menus_for_log_scale(have_2nd_yaxis)
+        if add_update_menus:
+            updatemenus, menu_annotations = self.make_update_menus_for_log_scale(have_2nd_yaxis)
+        else:
+            updatemenus = None
+            menu_annotations = None
         fig.update_layout(updatemenus=updatemenus,
                           xaxis=xaxis,
                           yaxis=yaxis,

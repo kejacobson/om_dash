@@ -8,6 +8,9 @@ from dash.dependencies import Input, Output, State
 
 class GuiOptHistoryCore(PlotlyBase):
     def __init__(self):
+        """
+        The primary dash and html elements in the GUI for monitoring the history of OpenMDAO optimizations
+        """
         super().__init__()
 
         self.recorder_file = 'nonexistent_history_file_to_start.sql'
@@ -109,7 +112,7 @@ def add_callbacks(app, core: GuiOptHistoryCore):
         Output('opt_export_html_status', 'children'),
         [Input('opt_export_html_button', 'n_clicks')],
         [State('opt_export_html_input', 'value')])
-    def export_opt_history_html(n_clicks, filename):
+    def export_opt_history_fig_to_html(n_clicks, filename):
         status = ''
         if n_clicks > 0:
             status = core.export_fig_as_html(core.opt_hist_fig, filename)

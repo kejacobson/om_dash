@@ -13,13 +13,7 @@ class OptHistoryFigureGenerator(PlotlyBase):
         self.include_dvs = True
         super().__init__()
 
-    def _key_is_a_constraint_key(self, key):
-        return key in self.parser.cons.keys()
-
-    def _key_is_a_dv_key(self, key):
-        return key in self.parser.dvs.keys()
-
-    def create_figure(self):
+    def create_figure(self, add_update_menus=True):
         all_data = self._get_opt_history_data_from_parser()
 
         self.plotted_iterations = all_data['Iteration'].to_numpy()
@@ -36,7 +30,7 @@ class OptHistoryFigureGenerator(PlotlyBase):
             yaxis2 = None
 
         fig = make_subplots(specs=[[{"secondary_y": True}]])
-        self.set_default_figure_layout(fig, xaxis, yaxis, yaxis2)
+        self.set_default_figure_layout(fig, xaxis, yaxis, yaxis2, add_update_menus)
 
         for sec_y, (key, vals) in zip(on_secondary_y, all_data.items()):
             if key == 'Iteration':
@@ -92,3 +86,9 @@ class OptHistoryFigureGenerator(PlotlyBase):
             else:
                 secondary_y.append(False)
         return secondary_y
+
+    def _key_is_a_constraint_key(self, key):
+        return key in self.parser.cons.keys()
+
+    def _key_is_a_dv_key(self, key):
+        return key in self.parser.dvs.keys()

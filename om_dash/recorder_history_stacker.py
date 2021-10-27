@@ -6,6 +6,9 @@ from .recorder_parser import RecorderParser
 
 class RecorderHistoryStacker(RecorderParser):
     def __init__(self, recorder_filenames: List[str]):
+        """
+        A parser for OpenMDAO recorders that concatenates the histories.
+        """
         self.update_histories_from_recorder(recorder_filenames)
 
     def update_histories_from_recorder(self, recorder_filenames: List[str]):
