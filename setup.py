@@ -10,7 +10,6 @@ setup(
     description=("Simple GUI demo for OpenMDAO"),
     scripts=['om_dash/monitor_opt.py',
              'om_dash/om_convert_recorder_hist.py',
-             'om_dash/om_stack_recorder_hists.py',
              'om_dash/om_plot_recorder_hist.py'],
     author="Kevin Jacobson",
     author_email="kevin.e.jacobson@nasa.gov",

@@ -1,35 +1,31 @@
 """
-This script will read the sql file from an OpenMDAO recorder and use plotly
-to write an html or image of the optimization history.
+This script will read the sql file from an OpenMDAO recorder(s) and use plotly
+to write an html or image of the optimization history. If multiple record files are provided,
+the histories will be concatenated and a single plot will be generated.
 """
 
 import argparse
-from om_dash.recorder_parser import RecorderParser
+from om_dash.recorder_history_stacker import RecorderHistoryStacker
 from om_dash.opt_hist_figure_generator import OptHistoryFigureGenerator
+from om_dash.om_convert_recorder_hist import set_output_file_name
 
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                     description=__doc__)
-    parser.add_argument('recorder_filename', type=str,
-                        help='OpenMDAO recorder filename (.sql file)')
-    parser.add_argument('-o', '--output', type=str, default='{recorder_root}.html',
-                        help='Filename to write to image or html.')
-    args = parser.parse_args()
+    arg_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                         description=__doc__)
+    arg_parser.add_argument('-i', '--inputs', nargs='+', type=str,
+                            help='OpenMDAO recorder filenames (.sql file)')
+    arg_parser.add_argument('-o', '--output', type=str, default='{first_recorder_root}.html',
+                            help='Filename to write to image or html.')
+    args = arg_parser.parse_args()
 
-    recorder_filename: str = args.recorder_filename
-    parser = RecorderParser(recorder_filename)
+    outfile = set_output_file_name(args.inputs, args.output, 'html')
 
-    outfile = args.output
-    if 'recorder_root' in outfile:
-        recorder_root = recorder_filename.split('.sql')[0]
-        outfile = f'{recorder_root}.html'
+    om_parser = RecorderHistoryStacker(args.inputs)
+    fig_gen = OptHistoryFigureGenerator(om_parser)
 
-    write_html = True if outfile.split('.')[-1] == 'html' else False
-
-    fig_gen = OptHistoryFigureGenerator(parser)
+    write_html = (outfile.split('.')[-1] == 'html')
     fig = fig_gen.create_figure(add_update_menus=write_html)
-
     if write_html:
         fig.write_html(outfile)
     else:

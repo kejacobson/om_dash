@@ -1,13 +1,23 @@
 """
 This script will read the sql file from an OpenMDAO recorder and write a tecplot
 .dat file or csv file with the history of the optimization.
+If multiple record files are provided, the histories will be concatenated and a single file will
+be written.
 """
 
 import argparse
-from om_dash.recorder_parser import RecorderParser
+from om_dash.recorder_history_stacker import RecorderHistoryStacker
+from typing import List
 
 
-def write_data_to_file(parser: RecorderParser, filename: str):
+def set_output_file_name(inputs: List[str], output_arg: str, default_ext='dat'):
+    if 'recorder_root' in output_arg:
+        first_recorder_root = inputs[0].split('.sql')[0]
+        output_arg = f'{first_recorder_root}.{default_ext}'
+    return output_arg
+
+
+def write_data_to_file(parser: RecorderHistoryStacker, filename: str):
     ext = filename.split('.')[-1]
     if ext == 'dat':
         parser.write_data_to_tecplot(filename)
@@ -19,20 +29,15 @@ def write_data_to_file(parser: RecorderParser, filename: str):
 def main():
     arg_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                          description=__doc__)
-    arg_parser.add_argument('recorder_filename', type=str,
-                            help='OpenMDAO recorder filename (.sql file)')
+    arg_parser.add_argument('-i', '--inputs', nargs='+', type=str,
+                            help='OpenMDAO recorder filenames (.sql file)')
     arg_parser.add_argument(
-        '-o', '--output', type=str, default='{recorder_root}.dat',
+        '-o', '--output', type=str, default='{first_recorder_root}.dat',
         help='Filename to write. Should have a ".dat" file extension for tecplot or ".csv" for comma separated values.')
     args = arg_parser.parse_args()
 
-    recorder_filename = args.recorder_filename
-    om_parser = RecorderParser(recorder_filename)
-
-    outfile = args.output
-    if 'recorder_root' in outfile:
-        recorder_root = recorder_filename.split('.sql')[0]
-        outfile = f'{recorder_root}.dat'
+    om_parser = RecorderHistoryStacker(args.inputs)
+    outfile = set_output_file_name(args.inputs, args.output)
     write_data_to_file(om_parser, outfile)
 
 
