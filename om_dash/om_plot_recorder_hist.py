@@ -13,7 +13,7 @@ from om_dash.om_convert_recorder_hist import set_output_file_name
 def main():
     arg_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                          description=__doc__)
-    arg_parser.add_argument('-i', '--inputs', nargs='+', type=str,
+    arg_parser.add_argument('-i', '--inputs', nargs='+', type=str, required=True,
                             help='OpenMDAO recorder filenames (.sql file)')
     arg_parser.add_argument('-o', '--output', type=str, default='{first_recorder_root}.html',
                             help='Filename to write to image or html.')

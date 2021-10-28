@@ -29,7 +29,7 @@ def write_data_to_file(parser: RecorderHistoryStacker, filename: str):
 def main():
     arg_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                          description=__doc__)
-    arg_parser.add_argument('-i', '--inputs', nargs='+', type=str,
+    arg_parser.add_argument('-i', '--inputs', nargs='+', type=str, required=True,
                             help='OpenMDAO recorder filenames (.sql file)')
     arg_parser.add_argument(
         '-o', '--output', type=str, default='{first_recorder_root}.dat',
