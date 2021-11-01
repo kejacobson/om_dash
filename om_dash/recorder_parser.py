@@ -68,8 +68,8 @@ class RecorderParser:
             if vals.size == 1:
                 new_dict[key] = np.array(vals)
             else:
-                for i, val in enumerate(vals):
-                    new_dict[f'{key}_{i}'] = np.array(val)
+                for i, val in enumerate(vals.flatten()):
+                    new_dict[f'{key}_{i}'] = np.array([val])
         return pd.DataFrame(new_dict)
 
     def _there_are_no_constraints(self, case_recorder: SqliteCaseReader) -> bool:
