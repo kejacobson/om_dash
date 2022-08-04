@@ -27,7 +27,17 @@ def create_arg_parser():
                             dest='confirm',
                             help='Whether to search for LNBGS in the output')
     arg_parser.add_argument('--no-lnbgs', dest='lnbgs', action='store_false')
-    arg_parser.set_defaults(nlbgs=True, lnbgs=True)
+    arg_parser.add_argument('--absolute',
+                            action='store_true',
+                            dest='absolute',
+                            help='Whether to plot absolute residuals')
+    arg_parser.add_argument('--no-absolute', dest='absolute', action='store_false')
+    arg_parser.add_argument('--relative',
+                            action='store_true',
+                            dest='relative',
+                            help='Whether to plot relative residuals')
+    arg_parser.add_argument('--no-relative', dest='relative', action='store_false')
+    arg_parser.set_defaults(nlbgs=True, lnbgs=True, absolute=True, relative=True)
 
     return arg_parser
 
@@ -77,7 +87,8 @@ def set_figure_settings(add_update_menus: bool):
     return fig
 
 
-def plot_residual_data(all_data: List[np.ndarray], input_filename: str, doing_nlbgs: bool):
+def plot_residual_data(all_data: List[np.ndarray], input_filename: str,
+                       doing_nlbgs: bool, absolute: bool, relative: bool):
     bgs = 'nlbgs' if doing_nlbgs else 'lnbgs'
     outfile = set_output_file_name(input_filename, 'html', bgs)
     write_html = (outfile.split('.')[-1] == 'html')
@@ -88,15 +99,16 @@ def plot_residual_data(all_data: List[np.ndarray], input_filename: str, doing_nl
         current_num_iterations = data_set.shape[0]
         end_iteration = start_iteration + current_num_iterations
         plot_iterations = np.arange(start_iteration, end_iteration)
-        fig.add_trace(go.Scattergl(x=plot_iterations,
-                                   y=data_set[:, 1],
-                                   mode='lines+markers',
-                                   name=f'Solve {solve}: Absolute'))
-        fig.add_trace(go.Scattergl(x=plot_iterations,
-                                   y=data_set[:, 2],
-                                   mode='lines+markers',
-                                   name=f'Solve {solve}: Relative',
-                                   line=dict(dash='dot')))
+        if absolute:
+            fig.add_trace(go.Scattergl(x=plot_iterations,
+                                       y=data_set[:, 1],
+                                       mode='lines+markers',
+                                       name=f'Solve {solve}: Absolute'))
+        if relative:
+            fig.add_trace(go.Scattergl(x=plot_iterations,
+                                       y=data_set[:, 2],
+                                       mode='lines+markers',
+                                       name=f'Solve {solve}: Relative'))
         start_iteration += current_num_iterations
 
     if write_html:
@@ -113,13 +125,13 @@ def main():
         doing_nlbgs = True
         lines = grep_for_bgs_residuals_in_file(args.input, doing_nlbgs)
         residual_data = get_residual_data_from_lines(lines, doing_nlbgs)
-        plot_residual_data(residual_data, args.input, doing_nlbgs)
+        plot_residual_data(residual_data, args.input, doing_nlbgs, args.absolute, args.relative)
 
     if args.lnbgs:
         doing_nlbgs = False
         lines = grep_for_bgs_residuals_in_file(args.input, doing_nlbgs)
         residual_data = get_residual_data_from_lines(lines, doing_nlbgs)
-        plot_residual_data(residual_data, args.input, doing_nlbgs)
+        plot_residual_data(residual_data, args.input, doing_nlbgs, args.absolute, args.relative)
 
 
 if __name__ == '__main__':
