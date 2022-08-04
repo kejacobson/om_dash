@@ -7,6 +7,7 @@ import argparse
 from typing import List
 import numpy as np
 import plotly.graph_objects as go
+from om_dash.bgs_residual_parser import BgsResidualParser
 
 from om_dash.om_convert_recorder_hist import set_output_file_name
 from om_dash.plotly_base import PlotlyBase
@@ -42,38 +43,10 @@ def create_arg_parser():
     return arg_parser
 
 
-def grep_for_bgs_residuals_in_file(filename: str, doing_nlbgs: bool):
-    prefix = 'NL: NLBGS' if doing_nlbgs else 'LN: LNBGS'
-    return os.popen(f'grep -E "{prefix} [0-9]" {filename}').read().split('\n')[:-1]
-
-
-def split_line_into_residual_data(line: str, nlbgs: bool):
-    key = 'NLBGS' if nlbgs else 'LNBGS'
-    iteration = int(line.split(';')[0].split(key)[-1])
-    abs_resid = float(line.split(';')[-1].split(' ')[1])
-    rel_resid = float(line.split(';')[-1].split(' ')[2])
-    return iteration, abs_resid, rel_resid
-
-
-def get_residual_data_from_lines(lines: List[str], doing_nlbgs: bool) -> List[np.ndarray]:
-    all_data = []
-    current_solve = []
-    start_iteration = 1 if doing_nlbgs else 0
-    for line in lines:
-        iteration, abs_resid, rel_resid = split_line_into_residual_data(line, doing_nlbgs)
-        if iteration == start_iteration and len(current_solve) > 0:
-            all_data.append(np.array(current_solve))
-            current_solve = []
-        current_solve.append([iteration, abs_resid, rel_resid])
-
-    # append the last solve
-    all_data.append(np.array(current_solve))
-    return all_data
-
-
-def set_output_file_name(input: str, default_ext: str, bgs: str) -> str:
+def set_output_file_name(input: str, ext: str, doing_nlbgs: bool) -> str:
+    bgs = 'nlbgs' if doing_nlbgs else 'lnbgs'
     input_root = os.path.splitext(input)[0]
-    output_arg = f'{input_root}_{bgs}.{default_ext}'
+    output_arg = f'{input_root}_{bgs}.{ext}'
     return output_arg
 
 
@@ -83,14 +56,13 @@ def set_figure_settings(add_update_menus: bool):
     xaxis, yaxis = base.get_axis_settings()
     xaxis['title'] = 'Iteration'
     yaxis['title'] = 'Residual'
+    yaxis['type'] = 'log'
     base.set_default_figure_layout(fig, xaxis, yaxis, add_update_menus=add_update_menus)
     return fig
 
 
-def plot_residual_data(all_data: List[np.ndarray], input_filename: str,
-                       doing_nlbgs: bool, absolute: bool, relative: bool):
-    bgs = 'nlbgs' if doing_nlbgs else 'lnbgs'
-    outfile = set_output_file_name(input_filename, 'html', bgs)
+def create_residual_figure(all_data: List[np.ndarray], outfile: str,
+                           doing_nlbgs: bool, absolute: bool, relative: bool):
     write_html = (outfile.split('.')[-1] == 'html')
     start_iteration = 0
     fig = set_figure_settings(write_html)
@@ -110,7 +82,11 @@ def plot_residual_data(all_data: List[np.ndarray], input_filename: str,
                                        mode='lines+markers',
                                        name=f'Solve {solve}: Relative'))
         start_iteration += current_num_iterations
+    return fig
 
+
+def write_file(outfile: str, fig: go.Figure):
+    write_html = (outfile.split('.')[-1] == 'html')
     if write_html:
         fig.write_html(outfile)
     else:
@@ -121,17 +97,23 @@ def main():
     arg_parser = create_arg_parser()
     args = arg_parser.parse_args()
 
+    parser = BgsResidualParser()
     if args.nlbgs:
         doing_nlbgs = True
-        lines = grep_for_bgs_residuals_in_file(args.input, doing_nlbgs)
-        residual_data = get_residual_data_from_lines(lines, doing_nlbgs)
-        plot_residual_data(residual_data, args.input, doing_nlbgs, args.absolute, args.relative)
+        outfile = set_output_file_name(args.input, 'html', doing_nlbgs)
+        parser.parse_residuals(args.input, doing_nlbgs)
+        fig = create_residual_figure(parser.all_data, outfile, doing_nlbgs,
+                                     args.absolute, args.relative)
+        write_file(outfile, fig)
 
     if args.lnbgs:
         doing_nlbgs = False
-        lines = grep_for_bgs_residuals_in_file(args.input, doing_nlbgs)
-        residual_data = get_residual_data_from_lines(lines, doing_nlbgs)
-        plot_residual_data(residual_data, args.input, doing_nlbgs, args.absolute, args.relative)
+        parser.parse_residuals(args.input, doing_nlbgs)
+        outfile = set_output_file_name(args.input, 'html', doing_nlbgs)
+        parser.parse_residuals(args.input, doing_nlbgs)
+        fig = create_residual_figure(parser.all_data, outfile, doing_nlbgs,
+                                     args.absolute, args.relative)
+        write_file(outfile, fig)
 
 
 if __name__ == '__main__':
